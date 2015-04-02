@@ -65,7 +65,7 @@ def bs4_parse(var):
     """Parses out the indvidual search item"""
     var = request(var)
     soup = BeautifulSoup(var)
-    stuff = soup.body.find_all("div", "search_result")
+    stuff = soup.body.find_all("li", "search-result")
     items = []
     sites = []
     for i in stuff:
@@ -81,19 +81,19 @@ def parse_list(item):
     #What
     dic.append(str(item.find("a").text))
     #Doc
-    p = item.find("p", "doc").text
+    p = item.find("p").text
     if p:
-        if len(p) > 66:
-            p = p[:66] + "....."
+        #if len(p) > 66:
+        #    p = p[:66] + "....."
         dic.append("".join([i.replace("\n", " ") for i in p]))
     else:
         dic.append("No Documentation")
     #What lib
-    dic.append("Namespace: %s" % str(item.find("span", "ns").a.text))
+    dic.append("Namespace: %s" % str(item.find("h3").text))
     #Available exmaples
-    dic.append("Available Examples: %s" % str(item.find("span", "examples_count").text.split()[0]))
+    dic.append("Available Examples: %s" % str(item.find("div", "meta-info").text.split()[0]))
     #http
-    web = item.find("span", "linktext").text
+    web = "http://clojuredocs.org/" + item.find("a")["href"]
     return (dic, web)
 
 
@@ -207,9 +207,10 @@ class CljSearchCommand(sublime_plugin.WindowCommand):
         for i in range(0, len(self.res)):
             if search == self.res[i][0]:
                 self.panel_items = self.res
-                self.done(i)
-                return
-        self.search(s=self.res, link=self.search_links)
+                #self.done(i)
+                #return
+        #self.search(s=self.res, link=self.search_links)
+        self.search()
 
     def search(self, s=None, link=None):
         """Created a seperate method for the search.
@@ -218,7 +219,8 @@ class CljSearchCommand(sublime_plugin.WindowCommand):
             self.panel_items = s
         if link:
             self.search_links = link
-        sublime.set_timeout(lambda: self.window.show_quick_panel(self.panel_items, self.done), 1)
+        popts = self.panel_items if hasattr(self, "panel_items") else []
+        sublime.set_timeout(lambda: self.window.show_quick_panel(popts, self.done), 1)
 
     def done(self, num):
         """Main menu!"""
@@ -298,7 +300,7 @@ class CljSearchCommand(sublime_plugin.WindowCommand):
 
 
 def expanded_selection(view, line, left, right):
-    pat = re.compile('^[A-Za-z0-9_.-?*]+$')
+    pat = re.compile('^[A-Za-z0-9_.?*-]+$')
     while left > line.begin() and re.match(pat, view.substr(left - 1)):
         left -= 1
     while right < line.end() and re.match(pat, view.substr(right)):
