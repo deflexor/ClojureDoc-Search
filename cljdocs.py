@@ -226,6 +226,12 @@ class CljSearchCommand(sublime_plugin.WindowCommand):
     def done(self, num):
         """Main menu!"""
         if num == -1: return
+        # TODO
+        if num == 0:
+            #self.doc_check(parse_doc(self.search_links[0]))
+            webbrowser.get('/usr/bin/xdg-open %s').open(self.search_links[0])
+            return
+
         options = [
                     "View Docs",
                     "View Source",
