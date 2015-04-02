@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sublime
 import sublime_plugin
 import webbrowser
+import textwrap
 import re
 import sys
 
@@ -83,9 +84,11 @@ def parse_list(item):
     #Doc
     p = item.find("p").text
     if p:
-        #if len(p) > 66:
-        #    p = p[:66] + "....."
-        dic.append("".join([i.replace("\n", " ") for i in p]))
+        if len(p) > 66:
+            for line in textwrap.wrap(p,66):
+                dic.append("".join([i.replace("\n", " ") for i in line]))
+        else:
+            dic.append("".join([i.replace("\n", " ") for i in p]))
     else:
         dic.append("No Documentation")
     #What lib
@@ -93,7 +96,7 @@ def parse_list(item):
     #Available exmaples
     dic.append("Available Examples: %s" % str(item.find("div", "meta-info").text.split()[0]))
     #http
-    web = "http://clojuredocs.org/" + item.find("a")["href"]
+    web = "http://clojuredocs.org" + item.find("a")["href"]
     return (dic, web)
 
 
@@ -170,9 +173,7 @@ def parse_doc(url):
     """Parsing the documentation."""
     v = content_request(url)
     soup = BeautifulSoup(v)
-    stuff = soup.find("div", "doc").find("div", "content")
-    for e in stuff.findAll("br"):
-        e.replace_with("\n")
+    stuff = soup.find("div", "docstring").find("pre")
     l = []
     if not stuff:
         ret = " \n" + "No documentation available!\n"
@@ -279,7 +280,8 @@ class CljSearchCommand(sublime_plugin.WindowCommand):
     def selected_item(self, num):
         """1st menu. Directing the options to the main menu."""
         if num == -1:
-            self.search(s=self.res, link=self.search_links)
+            #self.search(s=self.res, link=self.search_links)
+            return
         if num == 0:
             self.doc_check(parse_doc(self.search_links[self.num]))
         if num == 1:
@@ -324,3 +326,8 @@ class GotoSelectionCommand(sublime_plugin.TextCommand, sublime.View):
     def run(self, edit):
         word = selection_words(self.view)[0]
         CljSearchCommand(self.view.window()).on_done(word)
+
+def chunks(s, n):
+    """Produce `n`-character chunks from `s`."""
+    for start in range(0, len(s), n):
+        yield s[start:start+n]
